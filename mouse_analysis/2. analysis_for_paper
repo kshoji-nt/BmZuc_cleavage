@@ -1,0 +1,62 @@
+#this script is written in R
+
+#Loading package
+library(Biostrings)
+
+#Loading data
+fas <- readDNAStringSet("mouse_ZM_piRNAshojibase.fas")
+names <- c("SRR7760309","SRR7760310","SRR7760317","SRR7760318","SRR7760321","SRR7760322","SRR7760343","SRR7760344","SRR7760347","SRR7760348","SRR7760369","SRR7760370","SRR7760373","SRR7760374","SRR7760377","SRR7760378")
+disc <- c("Round_KO_OXm","Round_KO_OXp","Pri_WT_OXm","Pri_WT_OXp","Sper_WT_OXm","Sper_WT_OXp","Pri_KO_OXm","Pri_KO_OXp","Sec_KO_OXm","Sec_KO_OXp","Sper_KO_OXm","Sper_KO_OXp","Round_WT_OXm","Round_WT_OXp","Sec_WT_OXm","Sec_WT_OXp")
+DAT <- list()
+for(i in 1:length(names)){
+DAT[[i]] <- read.table(paste0(names[i],"_MMshojibaseZM.table"))
+}
+
+#The peak position in each piRNA loci is acquired. If piRNA loci has no read, the peak position will be 45.
+plen <- matrix(0,nrow(DAT[[1]]),length(names))
+colnames(plen) <- disc
+rownames(plen) <- names(fas)
+exp <- plen
+for(i in 1:length(names)){
+	plen[,i] <- apply(DAT[[i]] ,1,order)[27,]+19
+	exp[,i] <- apply(DAT[[i]] ,1,sum)/sum(DAT[[i]] )*1000000
+	cat(i)
+}
+
+#piRNA loci with high expression (RPM>10) are extracted.
+lentab <- matrix(0,27,length(names))
+colnames(lentab) <- disc
+rownames(lentab) <- 20:46
+for(i in 1:length(names)){
+lentab[,i] <- table(c(20:46,plen[exp[,i] > 10,i]))-1
+}
+
+##piRNA length distribution
+###ext fig 6a
+RPMtab <- matrix(0,27,length(names))
+colnames(RPMtab) <- disc
+rownames(RPMtab) <- 20:46
+for(i in 1:length(names)){
+RPMtab[,i] <- apply(DAT[[i]],2,sum)/sum(DAT[[i]])*1000000
+}
+
+
+##nucleotide bias around peak position
+#ext fig 6b
+mat <- matrix(0,4,17)
+UN <- list(mat,mat,mat,mat,mat,mat,mat,mat,mat,mat,mat,mat,mat,mat,mat,mat)
+EX <- list(mat,mat,mat,mat,mat,mat,mat,mat,mat,mat,mat,mat,mat,mat,mat,mat)
+for(j in 1:length(names)){
+	for(i in 23:36){
+		if(sum(plen[,j]==i & exp[,j]>10)>2){
+			tmp <- consensusMatrix(fas[plen[,j]==i & exp[,j]>10])[1:4,(i-12):(i+4)]	
+			UN[[j]] <- UN[[j]] + tmp
+		}
+	}
+	for(i in 37:42){
+		if(sum(plen[,j]==i & exp[,j]>10)>2){
+			tmp <- consensusMatrix(fas[plen[,j]==i & exp[,j]>10])[1:4,(i-12):(i+4)]	
+			EX[[j]] <- EX[[j]] + tmp
+		}
+	}
+}
