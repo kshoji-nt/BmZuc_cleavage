@@ -1,0 +1,15 @@
+################
+###Divide the file for each array (however, since there are too many reads, divide after dividing)
+################
+#Since index did not work well, 5 libraries are mixed. However, since a fixed sequence is in a fixed position, the library can be divided using it.
+
+#Split file every 40 million lines
+split -l 40000000 randtotal_R1.fastq randtotal_R1_
+
+#Apply randdiv.R to each of the 49 files
+NN="aa ab ac ad ae af ag ah ai aj ak al am an ao ap aq ar as at au av aw ax ay az ba bb bc bd be bf bg bh bi bj bk bl bm bn bo bp bq br bs bt bu bv bw"
+for N in  ${NN}; do
+		echo $N
+		Rscript --slave --vanilla randdiv.R randtotal_R1_${N}
+done
+
