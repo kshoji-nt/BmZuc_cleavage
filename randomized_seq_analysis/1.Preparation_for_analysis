@@ -13,3 +13,6 @@ for N in  ${NN}; do
 		Rscript --slave --vanilla randdiv.R randtotal_R1_${N}
 done
 
+
+cat SD50_randtotal_R1_*.fas > SD50_randtotal.fas
+cat AD50_randtotal_R1_*.fas > AD50_randtotal.fas
