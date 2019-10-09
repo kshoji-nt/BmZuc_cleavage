@@ -1,0 +1,58 @@
+############
+#Map piRNA to piRNA loci fasta file
+############
+bowtie-build -f piRNA_shojibase.fas piRNA_shojibase
+
+M="2015_001A_"
+NN="IP1_R1　IP3_R1　T1_R1"
+for N in  ${NN}; do
+	echo $N
+	( bowtie --offrate 3 -p 10 -a --best --strata -v 3  -t --sam piRNA_shojibase -f ${M}${N}_trim.fasta  > ${M}${N}_piRNA_shojibase.sam )  
+	samtools view -@ 10 -bS ${M}${N}_piRNA_shojibase.sam > ${M}${N}_piRNA_shojibase.bam
+	bamToBed -i ${M}${N}_piRNA_shojibase.bam > ${M}${N}_piRNA_shojibase.bed
+done
+
+#################
+#From the obtained mapping result, only the read that starts from "0" and the direction is + is extracted.
+#################
+M="2015_001A_"
+NN="IP1_R1　IP3_R1　T1_R1"
+for N in  ${NN}; do
+	echo $N
+	Rscript --slave --vanilla  0start_+.R ${M}${N}
+done
+
+
+
+############
+#Map piRNA to extened piRNA loci fasta file
+############
+bowtie-build -f  piRNA_shojibase5350.fas  piRNA_shojibase5350
+
+M="2015_001A_"
+NN="IP1_R1　IP3_R1　T1_R1"
+for N in  ${NN}; do
+	echo $N
+	( bowtie --offrate 3 -p 10 -a --best --strata -v 1  -t --sam piRNA_shojibase5350 -f ${M}${N}_trim.fasta  > ${M}${N}_piRNA_shojibase5350.sam )  
+	samtools view -@ 10 -bS ${M}${N}_piRNA_shojibase5350.sam > ${M}${N}_piRNA_shojibase5350.bam
+	bamToBed -i ${M}${N}_piRNA_shojibase5350.bam > ${M}${N}_piRNA_shojibase5350.bed
+done
+
+
+###############
+#Summarize the situation of piRNA around piRNA loci
+###############
+#BOXSS: Distribution of relative position of 5'end in the same direction as piRNA
+#BOXSE: Distribution of relative position of 3'end in the same direction as piRNA
+#BOXRS: Distribution of relative position of 5'end opposite to piRNA
+#BOXRE: Distribution of relative position of 3'end opposite to piRNA
+#In each table, 101 indicates the 5'end position of the piRNA itself.
+
+
+M="2015_001A_"
+NN="IP1_R1　IP3_R1　T1_R1"
+for N in  ${NN}; do
+        echo $N
+	Rscript --slave --vanilla ov2.R ${M}${N}
+done
+
