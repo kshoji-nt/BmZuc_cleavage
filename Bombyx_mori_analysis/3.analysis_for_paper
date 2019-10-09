@@ -1,4 +1,3 @@
-
 ############################
 #Preparation for analysis @R
 ############################
@@ -60,48 +59,57 @@ Sd <- log2(apply(DAT1901[[5]],1,sum)/sum(DAT1901[[5]])*1000000) > log2(apply(DAT
 Ad <- log2(apply(DAT1901[[5]],1,sum)/sum(DAT1901[[5]])*1000000) < log2(apply(DAT1901[[7]],1,sum)/sum(DAT1901[[7]])*1000000)
 
 
-
-###ext fig 3a
-plot(log2(apply(DAT1901[[7]],1,sum)/sum(DAT1901[[7]])*1000000)[Sd], log2(apply(DAT1901[[11]],1,sum)/sum(DAT1901[[11]])*1000000)[Sd],col="#197500",ylab="log2(RPM(BmAgo3-IP))",xlab="log2(RPM(Siwi-IP))",cex=0.5,xlim=c(-2,15),ylim=c(-2,15))
-par(new=T)
-plot(log2(apply(DAT1901[[7]],1,sum)/sum(DAT1901[[7]])*1000000)[Ad], log2(apply(DAT1901[[11]],1,sum)/sum(DAT1901[[11]])*1000000)[Ad],col="#e9350d",ylab="log2(RPM(BmAgo3-IP))",xlab="log2(RPM(Siwi-IP))",cex=0.5,xlim=c(-2,15),ylim=c(-2,15))
-abline(a=0,b=1,col="blue")
-
-
-###ext fig 3c
-out <- matrix(0,12,26)
-colnames(out) <- 20:45
-dS <- list(Sd,Ad)
-for(i in 1:2){
-  for(j in 34:36){
-    for(k in 1:2){
-      out[(i-1)*6+(j-34)*2+k,] <- apply(DAT1807[[k]][plen1901[,4]==j & dS[[i]]&!R4,],2,sum)/sum(DAT1807[[k]])*1000000
-    }
-  }
-}
-
-
-###fig1c ext2h-i
+############################
+#Analysis and plot @R
+############################
+###Length distribution of piRNAs
+##fig.1c, ext-fig.2h-i
 MAT1 <- matrix(0,8,26)
 colnames(MAT1) <- 20:45
 rownames(MAT1) <- names1901
 for(i in 1:8){
- MAT1[i,] <- apply(DAT1901[[i]],2,sum)/sum(DAT1901[[i]])*1000000
+	MAT1[i,] <- apply(DAT1901[[i]],2,sum)/sum(DAT1901[[i]])*1000000
 }
 rbind(MAT1[3,]/MAT1[1,],MAT1[4,]/MAT1[2,])
 
-###fig1d (lower), ext 2j,ext 3b
+
+###Heat map of piRNA length distribution sorted by peak position
+##fig1d (mid) ext-fig 2k
+image(rbind(rep(1,26),as.matrix(sweep(DAT1901[[3]][order(plen1901[,4],decreasing = T),],1,apply(DAT1901[[3]][order(plen1901[,4],decreasing = T),],1,sum),"/"))),col=brewer.pal(9, "Greys"),main=names1901[3])
+image(rbind(rep(1,26),as.matrix(sweep(DAT1901[[4]][order(plen1901[,4],decreasing = T),],1,apply(DAT1901[[4]][order(plen1901[,4],decreasing = T),],1,sum),"/"))),col=brewer.pal(9, "Greys"),main=names1901[4])
+
+image(rbind(rep(1,26),as.matrix(sweep(DAT1807[[1]][order(plen1901[,4],decreasing = T),],1,apply(DAT1807[[1]][order(plen1901[,4],decreasing = T),],1,sum),"/"))),col=brewer.pal(9, "Greys"),main=names1807[1])
+image(rbind(rep(1,26),as.matrix(sweep(DAT1807[[2]][order(plen1901[,4],decreasing = T),],1,apply(DAT1807[[2]][order(plen1901[,4],decreasing = T),],1,sum),"/"))),col=brewer.pal(9, "Greys"),main=names1807[2])
+
+
+###Distribution of peak position of each piRNA locus
+##fig.1d (lower), ext-fig.2j,3b
 MAT2 <- matrix(0,8,26)
 colnames(MAT2) <- 20:45
 rownames(MAT2) <- names1901
 for(i in 1:8){
-MAT2[i,] <- table(c(20:45,plen1901[,i]))-1
+	MAT2[i,] <- table(c(20:45,plen1901[,i]))-1
 }
 
 
-###fig1f, 3d
-ACGT <- c("A","C","G","T")
+###Investigating the different effects of ZucKD for one piRNA peak position
+##fig.1e, ext-fig.3c
+MAT1e <- matrix(0,6,26)
+colnames(MAT1e) <- 20:45
+rownames(MAT1e) <- c("total_mockRNAi","total_ZucRNAi","Siwi-dominant_mockRNAi","Siwi-dominant_ZucRNAi","BmAgo3-dominant_mockRNAi","BmAgo3-dominant_ZucRNAi")
 
+i <- 35 #choose one peak position
+MAT1e[1,] <- apply(DAT1807[[1]][plen1901[,4] == i,],2,sum)/sum(DAT1807[[1]])*1000000
+MAT1e[2,] <- apply(DAT1807[[2]][plen1901[,4] == i,],2,sum)/sum(DAT1807[[2]])*1000000
+MAT1e[3,] <- apply(DAT1807[[1]][plen1901[,4] == i & Sd,],2,sum)/sum(DAT1807[[1]])*1000000
+MAT1e[4,] <- apply(DAT1807[[2]][plen1901[,4] == i & Sd,],2,sum)/sum(DAT1807[[2]])*1000000
+MAT1e[5,] <- apply(DAT1807[[1]][plen1901[,4] == i & Ad,],2,sum)/sum(DAT1807[[1]])*1000000
+MAT1e[6,] <- apply(DAT1807[[2]][plen1901[,4] == i & Ad,],2,sum)/sum(DAT1807[[2]])*1000000
+
+
+###Investigation of the bias of the base next to the peak
+##fig.1f, ext-fig.3d
+ACGT <- c("A","C","G","T")
 MAT3.1 <- matrix(0,8,4)
 colnames(MAT3.1) <- ACGT
 rownames(MAT3.1) <- names1901
@@ -109,14 +117,16 @@ MAT3.1a <- MAT3.1
 MAT3.1b <- MAT3.1
 for(j in 1:8){
   for(i in 20:30){
-    MAT3.1a[j,names( table(substr(fas[plen1901[,j]==i],i,i)))] <- MAT3.1a[j,names( table(substr(fas[plen1901[,j]==i],i,i)))] + table(substr(fas[plen1901[,j]==i],i,i))
+    MAT3.1a[j,names( table(substr(fas[plen1901[,j]==i],i,i)))] <- MAT3.1a[j,names( table(substr(fas[plen1901[,j]==i],i+1,i+1)))] + table(substr(fas[plen1901[,j]==i],i+1,i+1))
   }
   for(i in 31:42){
-    MAT3.1b[j,names( table(substr(fas[plen1901[,j]==i],i,i)))] <- MAT3.1b[j,names( table(substr(fas[plen1901[,j]==i],i,i)))]+  table(substr(fas[plen1901[,j]==i],i,i))
+    MAT3.1b[j,names( table(substr(fas[plen1901[,j]==i],i,i)))] <- MAT3.1b[j,names( table(substr(fas[plen1901[,j]==i],i+1,i+1)))]+  table(substr(fas[plen1901[,j]==i],i+1,i+1))
   }
 }
 
-###fig1g 3e
+
+###Distribution of 5 'end of piRNA around the peak position
+##fig.1g, 3e
 MAT3.2 <- matrix(0,8,21)
 colnames(MAT3.2) <- -10:10
 rownames(MAT3.2) <- names1901
@@ -132,21 +142,8 @@ for(j in 1:8){
 }
 
 
-###fig1e ext 3c
-MAT1e <- matrix(0,6,26)
-colnames(MAT1e) <- 20:45
-rownames(MAT1e) <- c("total_mockRNAi","total_ZucRNAi","Siwi-dominant_mockRNAi","Siwi-dominant_ZucRNAi","BmAgo3-dominant_mockRNAi","BmAgo3-dominant_ZucRNAi")
-
-i <- 35
-MAT1e[1,] <- apply(DAT1807[[1]][plen1901[,4] == i,],2,sum)/sum(DAT1807[[1]])*1000000
-MAT1e[2,] <- apply(DAT1807[[2]][plen1901[,4] == i,],2,sum)/sum(DAT1807[[2]])*1000000
-MAT1e[3,] <- apply(DAT1807[[1]][plen1901[,4] == i & Sd,],2,sum)/sum(DAT1807[[1]])*1000000
-MAT1e[4,] <- apply(DAT1807[[2]][plen1901[,4] == i & Sd,],2,sum)/sum(DAT1807[[2]])*1000000
-MAT1e[5,] <- apply(DAT1807[[1]][plen1901[,4] == i & Ad,],2,sum)/sum(DAT1807[[1]])*1000000
-MAT1e[6,] <- apply(DAT1807[[2]][plen1901[,4] == i & Ad,],2,sum)/sum(DAT1807[[2]])*1000000
-
-
-###fig2a ext 3f
+###Distribution of downstream piRNA's 5'end
+##fig.2a, ext-fig.3f
 MAT6 <- matrix(0,4,81)
 colnames(MAT6) <- 20:100
 rownames(MAT6) <- c("un-ext_SS","ext_SS","un-ext_RS","ext_RS")
@@ -154,33 +151,96 @@ MAT6s <- MAT6
 MAT6a <- MAT6
 unext <- plen1901[,4]<31 &!R4 &!plen1901[,4]==45
 ext <- !plen1901[,4]<31 &!R4 &!plen1901[,4]==45
-  MAT6[1,] <- apply(BOXSS1901[[3]][unext,121:201],2,sum)/sum(unext)/sum(DAT1901[[3]])*1000000
-  MAT6[2,] <- apply(BOXSS1901[[3]][ext,121:201],2,sum)/sum(ext)/sum(DAT1901[[3]])*1000000
-  MAT6[3,] <- apply(BOXRS1901[[3]][unext,121:201],2,sum)/sum(unext)/sum(DAT1901[[3]])*1000000
-  MAT6[4,] <- apply(BOXRS1901[[3]][ext,121:201],2,sum)/sum(ext)/sum(DAT1901[[3]])*1000000
 
-  MAT6s[1,] <- apply(BOXSS1901[[3]][unext & Sd,121:201],2,sum)/sum(unext& Sd)/sum(DAT1901[[3]])*1000000
-  MAT6s[2,] <- apply(BOXSS1901[[3]][ext& Sd,121:201],2,sum)/sum(ext& Sd)/sum(DAT1901[[3]])*1000000
-  MAT6s[3,] <- apply(BOXRS1901[[3]][unext& Sd,121:201],2,sum)/sum(unext& Sd)/sum(DAT1901[[3]])*1000000
-  MAT6s[4,] <- apply(BOXRS1901[[3]][ext& Sd,121:201],2,sum)/sum(ext& Sd)/sum(DAT1901[[3]])*1000000
+#all piRNA loci
+MAT6[1,] <- apply(BOXSS1901[[3]][unext,121:201],2,sum)/sum(unext)/sum(DAT1901[[3]])*1000000
+MAT6[2,] <- apply(BOXSS1901[[3]][ext,121:201],2,sum)/sum(ext)/sum(DAT1901[[3]])*1000000
+MAT6[3,] <- apply(BOXRS1901[[3]][unext,121:201],2,sum)/sum(unext)/sum(DAT1901[[3]])*1000000
+MAT6[4,] <- apply(BOXRS1901[[3]][ext,121:201],2,sum)/sum(ext)/sum(DAT1901[[3]])*1000000
 
-  MAT6a[1,] <- apply(BOXSS1901[[3]][unext& Sd,121:201],2,sum)/sum(unext& Sd)/sum(DAT1901[[3]])*1000000
-  MAT6a[2,] <- apply(BOXSS1901[[3]][ext& Sd,121:201],2,sum)/sum(ext& Sd)/sum(DAT1901[[3]])*1000000
-  MAT6a[3,] <- apply(BOXRS1901[[3]][unext& Sd,121:201],2,sum)/sum(unext& Sd)/sum(DAT1901[[3]])*1000000
-  MAT6a[4,] <- apply(BOXRS1901[[3]][ext& Sd,121:201],2,sum)/sum(ext& Sd)/sum(DAT1901[[3]])*1000000
+#Siwi-dominant piRNA loci
+MAT6s[1,] <- apply(BOXSS1901[[3]][unext & Sd,121:201],2,sum)/sum(unext& Sd)/sum(DAT1901[[3]])*1000000
+MAT6s[2,] <- apply(BOXSS1901[[3]][ext& Sd,121:201],2,sum)/sum(ext& Sd)/sum(DAT1901[[3]])*1000000
+MAT6s[3,] <- apply(BOXRS1901[[3]][unext& Sd,121:201],2,sum)/sum(unext& Sd)/sum(DAT1901[[3]])*1000000
+MAT6s[4,] <- apply(BOXRS1901[[3]][ext& Sd,121:201],2,sum)/sum(ext& Sd)/sum(DAT1901[[3]])*1000000
 
-###fig2b
-target <- "piRNA1249"
+#BmAgo3-dominant piRNA loci
+MAT6a[1,] <- apply(BOXSS1901[[3]][unext& Ad,121:201],2,sum)/sum(unext& Ad)/sum(DAT1901[[3]])*1000000
+MAT6a[2,] <- apply(BOXSS1901[[3]][ext& Ad,121:201],2,sum)/sum(ext& Ad)/sum(DAT1901[[3]])*1000000
+MAT6a[3,] <- apply(BOXRS1901[[3]][unext& Ad,121:201],2,sum)/sum(unext& Ad)/sum(DAT1901[[3]])*1000000
+MAT6a[4,] <- apply(BOXRS1901[[3]][ext& Ad,121:201],2,sum)/sum(ext& Ad)/sum(DAT1901[[3]])*1000000
+
+
+###Distribution of the 5 'end of piRNA in the region downstream of a piRNNA
+##fig.2b
+target <- "piRNA1249" #Choose the name of the piRNA you are interested in 
 MAT2b <- matrix(0,2,81)
 rownames(MAT2b) <- c("sense strand","antisense strand")
 colnames(MAT2b) <- -10:70
 MAT2b[1,] <- as.matrix(BOXSS1901[[3]][target,90:170]/sum(DAT1901[[3]])*1000000)
 MAT2b[2,] <- as.matrix(BOXRS1901[[3]][target,90:170]/sum(DAT1901[[3]])*1000000)
 
-###ext fig 3g
-bed2 <- bed[bed[,1]=="TE1_TK0019_BmpiggyBac-MER85",]
-MER85e <- matrix(0,3504,2)
-MER85u <- matrix(0,3504,2)
+
+###Base bias near peak position
+##fig.4g
+#First give a array as a dummy
+fasSext <- "A"
+fasAext <- "A"
+for(i in 31:41){
+fasSext <- c(fasSext,substr(fas[plen1901[,4] == i & Sd &!R4],i-12,i+4))
+fasAext <- c(fasAext,substr(fas[plen1901[,4] == i & Ad &!R4],i-12,i+4))
+}
+
+#Remove the dummy
+fasSext <- DNAStringSet(fasSext[-1])
+fasAext <- DNAStringSet(fasAext[-1])
+consensusMatrix(fasSext,as.prob = T)[1:4,]
+consensusMatrix(fasAext,as.prob = T)[1:4,]
+
+#First give a array as a dummy
+fasSnai <- "A"
+fasAnai <- "A"
+for(i in 26:31){
+fasSnai <- c(fasSnai,substr(fas[plen1901[,3] == i & Sd &!R4],i-12,i+4))
+fasAnai <- c(fasAnai,substr(fas[plen1901[,3] == i & Ad &!R4],i-12,i+4))
+}
+#Remove the dummy
+fasSnai <- DNAStringSet(fasSnai[-1])
+fasAnai <- DNAStringSet(fasAnai[-1])
+consensusMatrix(fasSnai,as.prob = T)[1:4,]
+consensusMatrix(fasAnai,as.prob = T)[1:4,]
+
+
+###Investigation of affinity to Siwi and BmAgo3 for each piRNA loci
+##ext-fig.3a
+plot(log2(apply(DAT1901[[7]],1,sum)/sum(DAT1901[[7]])*1000000)[Sd], log2(apply(DAT1901[[11]],1,sum)/sum(DAT1901[[11]])*1000000)[Sd],col="#197500",ylab="log2(RPM(BmAgo3-IP))",xlab="log2(RPM(Siwi-IP))",cex=0.5,xlim=c(-2,15),ylim=c(-2,15))
+par(new=T)
+plot(log2(apply(DAT1901[[7]],1,sum)/sum(DAT1901[[7]])*1000000)[Ad], log2(apply(DAT1901[[11]],1,sum)/sum(DAT1901[[11]])*1000000)[Ad],col="#e9350d",ylab="log2(RPM(BmAgo3-IP))",xlab="log2(RPM(Siwi-IP))",cex=0.5,xlim=c(-2,15),ylim=c(-2,15))
+abline(a=0,b=1,col="blue")
+
+
+###Distribution of piRNA loci length divided by peak position
+##ext-fig.3c
+out <- matrix(0,12,26)
+colnames(out) <- 20:45
+dS <- list(Sd,Ad)
+for(i in 1:2){
+  for(j in 34:36){
+    for(k in 1:2){
+      out[(i-1)*6+(j-34)*2+k,] <- apply(DAT1807[[k]][plen1901[,4]==j & dS[[i]]&!R4,],2,sum)/sum(DAT1807[[k]])*1000000
+    }
+  }
+}
+
+
+###Distribution of two types of piRNA loci on a transposon
+##ext-fig.3g
+ #Choose the name of a transposon
+tagname <-  "TE1_TK0019_BmpiggyBac-MER85"
+len <- 3504 #Enter the length of a transposon
+bed2 <- bed[bed[,1]==tagname,]
+MER85e <- matrix(0,len,2)
+MER85u <- matrix(0,len,2)
 
 exloci <- rownames(DAT1901[[1]])[plen1901[,4]>30]
 unloci <- rownames(DAT1901[[1]])[plen1901[,4]<31]
@@ -190,7 +250,7 @@ MER85e[bed2[bed2[,6]=="-" & is.element(bed2[,4],exloci),3],2] <- -1
 MER85u[bed2[bed2[,6]=="+" & is.element(bed2[,4],unloci),2]+1,1] <-1
 MER85u[bed2[bed2[,6]=="-" & is.element(bed2[,4],unloci),3],2] <- -1
 
-lenge <- 1:3504
+lenge <- 1:len
 
 barplot(MER85e[lenge,1],ylim=c(-1,1),border="#f1a32a")
 par(new=T)
@@ -198,38 +258,7 @@ barplot(MER85e[lenge,2],ylim=c(-1,1),border="#f1a32a")
 par(new=T)
 barplot(MER85u[lenge,1],ylim=c(-1,1),border="#aabcc1")
 par(new=T)
-barplot(MER85u[lenge,2],ylim=c(-1,1),border="#aabcc1",main="TE1_TK0019_BmpiggyBac-MER85",xlab="1:3504")
+barplot(MER85u[lenge,2],ylim=c(-1,1),border="#aabcc1",main=tagname,xlab="1:len")
 
 
-###fig1d (mid) ext fig 2k
-image(rbind(rep(1,26),as.matrix(sweep(DAT1901[[3]][order(plen1901[,4],decreasing = T),],1,apply(DAT1901[[3]][order(plen1901[,4],decreasing = T),],1,sum),"/"))),col=brewer.pal(9, "Greys"),main=names1901[3])
-image(rbind(rep(1,26),as.matrix(sweep(DAT1901[[4]][order(plen1901[,4],decreasing = T),],1,apply(DAT1901[[4]][order(plen1901[,4],decreasing = T),],1,sum),"/"))),col=brewer.pal(9, "Greys"),main=names1901[4])
-
-image(rbind(rep(1,26),as.matrix(sweep(DAT1807[[1]][order(plen1901[,4],decreasing = T),],1,apply(DAT1807[[1]][order(plen1901[,4],decreasing = T),],1,sum),"/"))),col=brewer.pal(9, "Greys"),main=names1807[1])
-image(rbind(rep(1,26),as.matrix(sweep(DAT1807[[2]][order(plen1901[,4],decreasing = T),],1,apply(DAT1807[[2]][order(plen1901[,4],decreasing = T),],1,sum),"/"))),col=brewer.pal(9, "Greys"),main=names1807[2])
-
-
-
-#fig4g
-fasSext <- "A"
-fasAext <- "A"
-for(i in 31:41){
-fasSext <- c(fasSext,substr(fas[plen1901[,4] == i & Sd &!R4],i-12,i+4))
-fasAext <- c(fasAext,substr(fas[plen1901[,4] == i & Ad &!R4],i-12,i+4))
-}
-fasSext <- DNAStringSet(fasSext[-1])
-fasAext <- DNAStringSet(fasAext[-1])
-consensusMatrix(fasSext,as.prob = T)[1:4,]
-consensusMatrix(fasAext,as.prob = T)[1:4,]
-
-fasSnai <- "A"
-fasAnai <- "A"
-for(i in 26:31){
-fasSnai <- c(fasSnai,substr(fas[plen1901[,3] == i & Sd &!R4],i-12,i+4))
-fasAnai <- c(fasAnai,substr(fas[plen1901[,3] == i & Ad &!R4],i-12,i+4))
-}
-fasSnai <- DNAStringSet(fasSnai[-1])
-fasAnai <- DNAStringSet(fasAnai[-1])
-consensusMatrix(fasSnai,as.prob = T)[1:4,]
-consensusMatrix(fasAnai,as.prob = T)[1:4,]
 
