@@ -1,0 +1,11 @@
+
+NN="SRR7760309 SRR7760310 SRR7760317 SRR7760318 SRR7760321 SRR7760322 SRR7760343 SRR7760344 SRR7760347 SRR7760348 SRR7760369 SRR7760370 SRR7760373 SRR7760374 SRR7760377 SRR7760378"
+for N in  ${NN}; do
+        echo $N
+prefetch -t http ${N}
+fastq-dump ${N}.sra
+cutadapt -a NNNTGGAATTCTCGGGTGCCAAGG --minimum-length 20 --maximum-length 70 -o ${N}_trim.fastq ${N}.fastq
+fastq_to_fasta -i ${N}_trim.fastq -o ${N}_trim.fasta
+cat ${N}_trim.fasta | awk 'NR%2==0' | awk '{print substr($0,1,24);}' | sort | uniq -c |sed -e "s/^ *//g" | sed -e "s/ /\t/g" > ${N}_trim_23bp.txt
+done
+
