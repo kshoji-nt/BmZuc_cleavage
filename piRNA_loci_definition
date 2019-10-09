@@ -1,0 +1,176 @@
+###############
+#trim adopters
+###############
+M="2015_001A_"
+NN="IP1_R1　IP3_R1　T1_R1"
+for N in  ${NN}; do
+	echo $N
+	cutadapt -a ^NNNN...NNNNTGGAATTCTCGGGTGCCAAGGAACTCCAGTCAC --minimum-length 20 --maximum-length 45 -o ${M}${N}_trim.fastq ${M}${N}.fastq.gz
+	fastq_to_fasta -i ${M}${N}_trim.fastq -o ${M}${N}_trim.fasta
+	rm ${M}${N}_trim.fastq
+done
+
+
+###############
+#Extract the 23 nt sequence from the 5 'end and calculate the frequency of each sequence.
+###############
+M="2015_001A_"
+NN="IP1_R1　IP3_R1　T1_R1"
+for N in  ${NN}; do
+	echo $N
+	cat ${M}${N}_trim.fasta | awk 'NR%2==0' | awk '{print substr($0,1,23);}' | sort | uniq -c |sed -e "s/^ *//g" | sed -e "s/ /\t/g" > ${M}${N}_trim_23bp.txt
+done
+
+
+################
+#Put together sequences with high frequency of 23 nt sequences in any library
+################
+#this script is written in R
+name0 <- "2015_001A_"
+names <- c("IP1_R1","IP3_R1","T1_R1")
+sleshhold <- 10 #Use only sequences with RPM larger than this value
+header <- "piRNA" 
+out_f <- "piRNAlist.fas"
+
+#Loading package
+library(Biostrings)
+
+#Loading data
+reads <- list()
+for(i in length(names)){
+	reads[[i]] <- read.table(paste0(name0,names[i],"_trim_23bp.txt"))
+	cat(i)
+}
+
+#Extract sequences with 23 nt
+reads2 <- list()
+for(i in c(1:12)){
+	reads2[[i]] <- reads[[i]][nchar(as.character(reads[[i]][,2]))==23,]
+}
+
+#Extract only sequences whose RPM is greater than or equal to sleshhold in any library
+hid <- list()
+for(i in 1:length(names)){
+	hid[[i]] <- as.character(reads2[[i]][reads2[[i]][,1]/sum(reads2[[i]][,1])*1000000 > sleshhold,2])
+}
+BBB <- DNAStringSet(unique(tag))
+names(BBB) <- paste0(header,1:length(BBB))
+
+#Export a temporary fasta file
+writeXStringSet(BBB,out_f, format="fasta", width=50)
+
+
+############
+#Bowtie against transposon to get up to 45 bases by extending "piRNAlist.fas"
+############
+bowtie-build -f transposon.fasta transposon
+( bowtie --offrate 3 -p 10 -a --best --strata -v 3  -t --sam transposon -f piRNAlist.fas  > piRNAlist_transposon.sam )  
+samtools view -@ 10 -bS piRNAlist_transposon.sam > piRNAlist_transposon.bam
+bamToBed -i piRNAlist_transposon.bam > piRNAlist_transposon.bed
+
+
+############
+#Create a table for each transposon length
+############
+#this script is written in R
+in_f1 <- "transposon.fasta"
+out_f <- "transposon_Info.txt"
+
+#Loading package
+library(Biostrings) 
+
+#Loading data
+reads1 <- readDNAStringSet(in_f1, format="fasta")
+table1 <- cbind(names(reads1),width(reads1))
+
+#Use the first part of a space-separated name
+list <- strsplit(table1[,1]," ")
+table2 <- table1
+for(i in 1:nrow(table2)){
+	table2[i,1] <- list[[i]][1]
+}
+
+#Export data
+write.table(table2,out_f,sep="\t",quote=F,row.names=F,col.names=F)
+ 
+ 
+############
+#45 nt sequences are obtained by extending 22 nt to the 3'end on transposon
+############
+slopBed -s -i  piRNAlist_transposon.bed -g transposon_Info.txt -l 0 -r 22 > piRNAlist_transposon_extend.bed 
+fastaFromBed -name -s -fi transposon.fasta -bed piRNAlist_transposon_extend.bed  -fo piRNAlist_transposon_extend.fas
+
+############
+#For every 23 bases from the 5 'end, no variation is allowed in the subsequent 45 bases
+############
+#this script is written in R
+in_f1 <- "piRNAlist_transposon_extend.fas"
+out_f <- "piRNA_shojibase.fas"
+
+#loading packages
+library(Biostrings) 
+
+#loading data
+reads1 <- readDNAStringSet(in_f1, format="fasta")
+NAMlis <- unlist(strsplit(names(reads1),"\\("))[seq(1, length(reads1)*2, by = 2)]
+names(reads1) <- NAMlis
+
+#Investigate whether 45-base sequences are unique for each 5'-side 23-base sequence
+names <- unique(NAMlis)
+BOX <- rep(F,length(names))
+sec <- floor(length(names)/100*(1:100))
+for(i in 1:length(names)){
+	BOX[i] <- length(unique(as.character(reads1[NAMlis == names[i]] ))) == 1
+	if(is.element(i,sec)){
+		cat("=")
+	}
+}
+
+#Number of 23-base sequences with unique 45-base sequences
+##This number is the same as the number of piRNA loci, so if this number is not what you intended, start over by extracting 23nt using sleshhold
+sum(is.element(NAMlis,names[BOX])) 
+
+#Export data
+names(reads1) <- NAMlis
+reads2 <- unique(reads1[is.element(NAMlis,names[BOX]),])
+writeXStringSet(reads2, file=out_f, format="fasta", width=50)
+
+
+############
+#Acquire a sequence in the range of 100 nt around the 5 'end of piRNA loci
+#201 nt sequences are obtained by extending 100 nt to the 5'end and 78 nt to the 3'end on transposon
+############
+slopBed -s -i  piRNAlist_transposon.bed -g transposon_Info.txt -l 100 -r 78  > piRNAlist_transposon_5350.bed 
+fastaFromBed -name -s -fi transposon.fasta -bed  piRNAlist_transposon_5350.bed  -fo piRNAlist_transposon_5350.fas
+
+############
+#Use one 100 nt around sequence per piRNA loci
+############
+#This script is written in R
+in_f0 <- "piRNA_shojibase.fas" #Use piRNA loci sequence as a reference
+in_f1 <- "piRNAlist_transposon_5350.fas"
+out_f <- "piRNA_shojibase5350.fas"
+
+#Loading packages
+library(Biostrings) 
+
+#Data loading and name handling
+readsA <- readDNAStringSet(in_f0, format="fasta")
+reads1 <- readDNAStringSet(in_f1, format="fasta")
+NAMlis <- unlist(strsplit(names(reads1),"\\("))[seq(1, length(reads1)*2, by = 2)]
+
+#For each reference sequence, flag only the first of the 201 base sequences.
+names <- unique(names(readsA))
+BOX <- rep(F,length(reads1))
+sec <- floor(length(names)/100*(1:100))
+for(i in 1:length(names)){
+	BOX[NAMlis==names[i]][1] <- T
+	if(is.element(i,sec)){
+		cat("=")
+	}
+}
+
+#Export data
+reads2 <-reads1[BOX]
+names(reads2) <- NAMlis[BOX]
+writeXStringSet(reads2, file=out_f, format="fasta", width=50)
