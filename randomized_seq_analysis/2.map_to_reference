@@ -1,0 +1,79 @@
+################
+#decompress, remove adapter, convert to fasta
+################
+M="190315_"
+NN="Kapa4_Tri1234-4_SD-Mock_Siwi-IP_NaIO4p Kapa5_Tri1234-4_SD-ZA_Siwi-IP_NaIO4p Kapa6_Tri1234-4_SD-ZHN_Siwi-IP_NaIO4p"
+for N in  ${NN}; do
+        echo $N
+cutadapt -a NNNNTGGAATTCTCGGGTGCCAAGGAACTCCAGTCAC --minimum-length 26 --maximum-length 45 -o ${M}${N}_trim2.fastq ${M}${N}.fastq.gz
+fastq_to_fasta -i ${M}${N}_trim2.fastq -o ${M}${N}_trim2.fasta
+rm ${M}${N}_trim2.fastq 
+done
+
+M="190212_"
+NN="A4_Tri1234-4_A3D-Mock_BmA3-IP_NaIO4p A5_Tri1234-4_A3D-ZucArmi_BmA3-IP_NaIO4p A6_Tri1234-4_A3D-ZHN_BmA3-IP_NaIO4p"
+for N in  ${NN}; do
+        echo $N
+cutadapt -a NNNNTGGAATTCTCGGGTGCCAAGGAACTCCAGTCAC --minimum-length 26 --maximum-length 45 -o ${M}${N}_trim2.fastq ${M}${N}.fastq.gz
+fastq_to_fasta -i ${M}${N}_trim2.fastq -o ${M}${N}_trim2.fasta
+rm ${M}${N}_trim2.fastq 
+done
+
+
+################
+#Mapping to reference
+################
+bowtie-build -f randSD50_ref.fas randSD50_ref
+P="190315_"
+NN="Kapa4_Tri1234-4_SD-Mock_Siwi-IP_NaIO4p Kapa5_Tri1234-4_SD-ZA_Siwi-IP_NaIO4p Kapa6_Tri1234-4_SD-ZHN_Siwi-IP_NaIO4p"
+for N in  ${NN}; do
+	echo $N
+	( bowtie --offrate 3 -p 10 -a --best --strata -v 0 -m 1 -t --sam randSD50_ref -f /home/kshoji/Casper/NGSdata/${P}${N}_trim2.fasta  > ${P}${N}_randSD50_ref.sam )  
+	samtools view -@ 10 -bS ${P}${N}_randSD50_ref.sam > ${P}${N}_randSD50_ref.bam
+	bamToBed -i ${P}${N}_randSD50_ref.bam > ${P}${N}_randSD50_ref.bed
+	rm ${P}${N}_randSD50_ref.sam
+	rm ${P}${N}_randSD50_ref.bam
+done
+done
+
+bowtie-build -f randAD50_ref.fas randAD50_ref
+P="190212_"
+NN="A4_Tri1234-4_A3D-Mock_BmA3-IP_NaIO4p A5_Tri1234-4_A3D-ZucArmi_BmA3-IP_NaIO4p A6_Tri1234-4_A3D-ZHN_BmA3-IP_NaIO4p"
+for N in  ${NN}; do
+	echo $N
+	( bowtie --offrate 3 -p 8 -a --best --strata -v 0 -m 1 -t --sam randAD50_ref -f /home/kshoji/Casper/NGSdata/${P}${N}_trim2.fasta  > ${P}${N}_randAD50_ref.sam )  
+	samtools view -@ 10 -bS ${P}${N}_randAD50_ref.sam > ${P}${N}_randAD50_ref.bam
+	bamToBed -i ${P}${N}_randAD50_ref.bam > ${P}${N}_randAD50_ref.bed
+	rm ${P}${N}_randAD50_ref.sam
+	rm ${P}${N}_randAD50_ref.bam
+done
+done
+
+
+################
+#Convert mapping results into a table of length distribution for each sequence
+################
+P="190315_"
+NN="Kapa4_Tri1234-4_SD-Mock_Siwi-IP_NaIO4p Kapa5_Tri1234-4_SD-ZA_Siwi-IP_NaIO4p Kapa6_Tri1234-4_SD-ZHN_Siwi-IP_NaIO4p"
+for N in  ${NN}; do
+        echo $N
+MM="randSD50"
+for M in  ${MM}; do
+        echo $M
+		Rscript --slave --vanilla  0start_rand.R ${P}${N}_${M}_ref ${M}_ref.fas
+done
+done
+
+
+P="190212_"
+NN="A4_Tri1234-4_A3D-Mock_BmA3-IP_NaIO4p A5_Tri1234-4_A3D-ZucArmi_BmA3-IP_NaIO4p A6_Tri1234-4_A3D-ZHN_BmA3-IP_NaIO4p"
+for N in  ${NN}; do
+        echo $N
+		MM="randAD50"
+		for M in  ${MM}; do
+			echo $M
+			Rscript --slave --vanilla  0start_rand.R ${P}${N}_${M}_ref ${M}_ref.fas
+		done
+done
+
+
