@@ -1,0 +1,253 @@
+############################
+#Preparation for analysis @R
+############################
+#This script is written in R
+#Loading package
+library(RColorBrewer)
+library(Biostrings)
+
+#Loading reference
+aref <- read.table("rand_AD50_ref_table.txt")
+sref <- read.table("rand_SD50_ref_table.txt")
+fasSD <- readDNAStringSet("randSD50_ref.fas")
+fasAD <- readDNAStringSet("randAD50_ref.fas")
+cols <- c("red","blue","green","orange")
+Sraw <- c(48196762,37651078,45964146)
+Araw0 <- c(20411090,21280236,23005525)
+Araw1 <- c(15719599,16571660,18347083)
+Araw <- Araw0+Araw1
+
+#Loading data
+At1 <- "190218_"
+At0 <- "190212_"
+Anames <- c("A4_Tri1234-4_A3D-Mock_BmA3-IP_NaIO4p","A5_Tri1234-4_A3D-ZucArmi_BmA3-IP_NaIO4p","A6_Tri1234-4_A3D-ZHN_BmA3-IP_NaIO4p")
+St <- "190315_"
+Snames <- c("Kapa4_Tri1234-4_SD-Mock_Siwi-IP_NaIO4p","Kapa5_Tri1234-4_SD-ZA_Siwi-IP_NaIO4p","Kapa6_Tri1234-4_SD-ZHN_Siwi-IP_NaIO4p")
+ADAT0 <- list()
+ADAT1 <- list()
+ADAT <- list()
+SDAT <- list()
+
+for(i in 1:3){
+  ADAT1[[i]] <- read.table(paste0(At1,Anames[i],"_randAD50_ref_piRNAdist.table"))
+  ADAT0[[i]] <- read.table(paste0(At0,Anames[i],"_randAD50_ref_piRNAdist.table"))
+  SDAT[[i]] <- read.table(paste0(St,Snames[i],"_randSD50_ref_piRNAdist.table"))
+  ADAT[[i]] <- ADAT1[[i]] + ADAT0[[i]]
+  cat(i)
+}
+
+
+############################
+#Analysis and plot @R
+############################
+#The peak position in each piRNA loci is acquired. If piRNA loci has no read, the peak position will be 45.
+plenA <- matrix(0,nrow(ADAT[[1]]),3)
+for(i in 1:3){
+  plenA[aref[,2] > 4,i] <-  apply(ADAT1[[i]],1,order)[26,]+19
+}
+
+plenS <- matrix(0,nrow(SDAT[[1]]),3)
+for(i in 1:3){
+  plenS[,i] <-  apply(SDAT[[i]],1,order)[26,]+19
+  cat(i)
+}
+
+#The distribution of peak position.
+plentabA <- apply(plenA,2,table)
+plentabS <- apply(plenS,2,table)
+
+
+#Calculate motifs around peak position
+##fig.4e-f
+#Use the bias of the entire random region as a background for calculation.
+BGRSD <- apply(alphabetFrequency(DNAStringSet(substr(fasSD,16,50))),2,sum)[1:4]/length(fasSD)/35
+BGRAD <- apply(alphabetFrequency(DNAStringSet(substr(fasAD,16,50))),2,sum)[1:4]/length(fasAD)/35
+
+#pre-piRNA motif that binds to Ago3 (1-3) and to Siwi (4-6)
+biasex2 <- list()
+for(j in 1:3){
+  tmp <- "N"
+  for(i in 31:43){ #Only sequences with peak positions 31-43 are used for analysis
+    tmp <- c(tmp,substr(fasAD[plenA[,j]==i],(i-12),(i+7)))
+    cat(sum(plenA[,j]==i))
+  }
+  tmp <- tmp[-1]
+  mat <- consensusMatrix(tmp)
+  colnames(mat) <- -13:6
+  biasex2[[j]] <- mat
+}
+
+for(j in 1:3){
+  tmp <- "N"
+  for(i in 31:43){
+    tmp <- c(tmp,substr(fasSD[plenS[,j]==i],(i-12),(i+7)))
+  }
+  tmp <- tmp[-1]
+  mat <- consensusMatrix(tmp)
+  colnames(mat) <- -13:6
+  biasex2[[j+3]] <- mat
+}
+
+#Motifs when overexpressing Zuc and Armi
+fit4h <- log2(sweep(sweep(biasex2[[5]],2,apply(biasex2[[5]],2,sum),"/") ,1,BGRSD,"/")) #Siwi pre-piRNA
+fit4i <- log2(sweep(sweep(biasex2[[2]],2,apply(biasex2[[2]],2,sum),"/") ,1,BGRAD,"/")) #BmAgo3 pre-piRNA
+
+
+##Analysis of endogenous sequences based on randomized motif sequences
+fit4h <- rbind(c(0.199927331,0.441618841,0.545309413,0.159572334,-0.114870619,-0.151371851,-0.176229375,0.215682048,0.124584007,-0.035401825,0.232400324,-0.389291481,-0.216914343,-0.380598775,0.390058834,0.157982149,-0.082555941,0.096633486,-0.028595577,-0.10672384),
+               c(-0.013121464,0.06626746,-0.062852127,0.104381598,0.15102991,0.035363002,0.136541836,0.113754853,0.034951919,0.326885965,0.00923327,-0.513674871,-0.07566831,-1.169192087,0.105556591,0.440191616,0.584537174,-0.123965756,-0.059775548,0.021320054),
+               c(-0.110605844,-0.249696104,-0.306590131,-0.514672226,-0.148544327,0.103518961,0.040648175,-0.296031939,0.073977304,-0.171336192,-0.326917273,-0.403640913,-0.928350249,0.279549325,0.185453585,-0.590668342,-0.388073076,0.027898509,0.08055172,0.08055172),
+               c(-0.071981451,-0.311586765,-0.269818668,0.147762,0.077472096,-0.008925472,-0.024899856,-0.055861786,-0.223212843,-0.153354271,0.045809632,0.74537353,0.666372908,0.569000382,-0.853232619,-0.159082506,-0.281374513,-0.004498892,-8.58523E-05,-0.008186765))
+
+#Use only 1-17 of the motif. Only bases with TOP15 frequency are used.
+fit4h2 <- fit4h[,1:17]
+fit4h2[fit4h2 < sort(fit4h2,decreasing=T)[15]] <- 0
+
+fit4i <- rbind(c(0.022531854,0.257110893,0.437040946,0.255036963,0.086754069,0.046871513,-0.015683104,0.21917436,0.192258161,0.148387814,0.278777094,-0.239884967,0.018299164,-0.201215847,0.181669792,0.094971042,-0.028256785,0.03789272,0.021881479,-0.027246848),
+      c(0.05451662,0.086096812,0.05342597,0.12429024,0.126069881,0.031754515,0.064604895,-0.006403217,-0.13726098,0.147402119,0.177605382,-0.34179738,-0.323263173,-0.386133848,0.129178979,0.309142125,0.381823561,0.005085974,-0.02241336,0.011358222),
+      c(0.0362625,-0.129366241,-0.357614988,-0.577002334,-0.293105856,-0.020744252,0.147738192,0.053215264,0.260706109,-0.038926946,-0.467725461,0.067964495,0.050247237,0.31624967,0.172372996,-0.191983931,-0.181663126,0.020385867,0.0648719,0.047586448),
+      c(-0.10343518,-0.226887935,-0.224085144,0.061447992,0.039251199,-0.051655066,-0.191996785,-0.267049054,-0.349451325,-0.256903477,-0.081783071,0.347917032,0.180455173,0.140715945,-0.528658777,-0.248000517,-0.225238575,-0.056192997,-0.058393906,-0.029320981))
+
+#Use only 1-17 of the motif. Only bases with TOP15 frequency are used.
+fit4i2 <- fit4i[,1:17]
+fit4i2[fit4i2 < sort(fit4i2,decreasing=T)[15]] <- 0
+ACGT <- c("A","C","G","T")
+
+
+#Create a shuffled sequence using a bias of 15-45 sequences of the original array
+ATGCbiasN <- apply(alphabetFrequency(DNAStringSet(substr(fas[plen1901[,4] < 31],15,45))),2,sum)[1:4]
+ATGCbiasE <- apply(alphabetFrequency(DNAStringSet(substr(fas[plen1901[,4] >30],15,45))),2,sum)[1:4]
+ATGCbiasNp <- ATGCbiasN/sum(ATGCbiasN)
+ATGCbiasEp <- ATGCbiasE/sum(ATGCbiasE)
+
+set.seed(20190605) 
+SEQ2 <- matrix("N",nrow(SEQ),45)
+SEQ20 <- matrix(runif(45*nrow(SEQ)),nrow(SEQ),45)
+ACGT <- c("A","C","G","T")
+for(i in 4:1){
+  SEQ2[plen1901[,4]<31,][SEQ20[plen1901[,4]<31,] <= sum(ATGCbiasNp[1:i])] <- ACGT[i]
+  SEQ2[plen1901[,4]>30,][SEQ20[plen1901[,4]>30,] <= sum(ATGCbiasEp[1:i])] <- ACGT[i]
+}
+
+
+#Calculate score for each putative cutting position (31-41) for each piRNA locus
+#see also Extended Data Fig.5f of the paper.
+socresS <- matrix(0,nrow(DAT1901[[1]]),11) #for endogenous sequence and Siwi motif
+socresA <- matrix(0,nrow(DAT1901[[1]]),11) #for endogenous sequence and BmAgo3 motif
+socresS3 <- matrix(0,nrow(DAT1901[[1]]),11) #for shuffled sequence and Siwi motif
+socresA3 <- matrix(0,nrow(DAT1901[[1]]),11) #for shuffled sequence and BmAgo3 motif
+for(i in 31:41){
+	tmp <- SEQ[,(i-12):(i+4)]
+	tmp3 <- SEQ2[,(i-12):(i+4)]
+	for(j in 1:4){
+		socresS[,i-30] <- socresS[,i-30]+ rowSums(sweep(tmp ==ACGT[j],2,fit4h2[j,],"*"))
+		socresS3[,i-30] <- socresS3[,i-30]+ rowSums(sweep(tmp3 ==ACGT[j],2,fit4h2[j,],"*"))
+  }
+  for(j in 1:4){
+    socresA[,i-30] <- socresA[,i-30]+ rowSums(sweep(tmp ==ACGT[j],2,fit4i2[j,],"*"))
+	socresA3[,i-30] <- socresA3[,i-30]+ rowSums(sweep(tmp3 ==ACGT[j],2,fit4i2[j,],"*"))
+  }
+}
+
+#Calculate the highest score for each sequence
+maxS <- apply(socresS,1,max)
+maxA <- apply(socresA,1,max)
+
+#Draw a score for each place with an heatmap
+##fig.4h
+SCR1 <- socresS[Sd,][order(plen1901[Sd,4]),11:1]
+SCR1[SCR1 > 4.5] <- 4.5 #Maximum value changed to 4.5
+tbs <- table(c(20:45,plen1901[Sd,4]))
+SCR2 <- socresA[Ad,][order(plen1901[Ad,4]),11:1]
+SCR2[SCR2 > 2.935506] <- 3　#Maximum value changed to 3
+tba <- table(c(20:45,plen1901[Ad,4]))
+
+image(SCR1,col= brewer.pal(9, "Greys"),main="Siwi-dominant")
+st <- sum(tbs[1:11])/sum(tbs)
+height <- 0.95
+for(i in 31:41){
+  en <- st + tbs[i-19]/sum(tbs)
+  segments(st, height, en, height,col="red",lwd = 2) #Draw a line at the expected cut site
+  height <- height -0.1
+  st <-en
+}
+
+image(SCR2,col= brewer.pal(9, "Greys"),main="BmAgo3-dominant")
+st <- sum(tba[1:11])/sum(tba)
+height <- 0.95
+for(i in 31:41){
+  en <- st + tba[i-19]/sum(tba)
+  segments(st, height, en, height,col="red",lwd = 2) #Draw a line at the expected cut site
+  height <- height -0.1
+  st <-en
+}
+
+#Comparison of the highest score distribution between the shuffled, the type E and type N.
+##ext fig 5b
+maxS3 <- apply(socresS3,1,max)
+maxA3 <- apply(socresA3,1,max)
+M24 <- c(maxS3,maxS[Sd&plen1901[,4] < 31],maxS[Sd&plen1901[,4] >30])
+M27 <- c(maxA3,maxA[Ad&plen1901[,4] < 31],maxA[Ad&plen1901[,4] >30])
+GRPS <- c(rep("shuffled",length(maxS3)),rep("un-ext",sum(Sd&plen1901[,4] < 31)),rep("ext",sum(Sd&plen1901[,4] >30)))
+GRPA <- c(rep("shuffled",length(maxA3)),rep("un-ext",sum(Ad&plen1901[,4] < 31)),rep("ext",sum(Ad&plen1901[,4] >30)))
+df_M24a <- data.frame(x=M24,group=factor(GRPS,level=c("shuffled","un-ext","ext")))
+df_M27a <- data.frame(x=M27,group=factor(GRPA,level=c("shuffled","un-ext","ext")))
+
+p1<-ggplot(df_M24a,aes(x=group,y=x,colour=group))+ theme_classic(base_size = 15, base_family = "Helvetica")#+ geom_hline(yintercept=median(df_M24a[df_M24a[,2]=="shuffled",1]),linetype="solid",colour="blue") 
+p1 <- p1+geom_boxplot(width=0.9,fill="white")+ scale_color_manual(values = c("black","#aabcc1", "#f1a32a"))#+scale_y_continuous(limits=c(1.5,4))
+p2<-ggplot(df_M27a,aes(x=group,y=x,colour=group))+ theme_classic(base_size = 15, base_family = "Helvetica")#+ geom_hline(yintercept=median(df_M27a[df_M27a[,2]=="shuffled",1]),linetype="solid",colour="blue") 
+p2<- p2+geom_boxplot(width=0.9,fill="white")+ scale_color_manual(values = c("black","#aabcc1", "#f1a32a"))
+
+grid.arrange(p1,p2,ncol = 2) #Arrange in two rows
+
+#Statistical test with wilcox test
+wilcox.test(maxS[Sd&plen1901[,4] > 30],maxS[Sd&plen1901[,4] <31])
+wilcox.test(maxA[Ad&plen1901[,4] > 30],maxA[Ad&plen1901[,4] <31])
+
+wilcox.test(maxS[Sd&plen1901[,4] > 30],maxS3)
+wilcox.test(maxA[Ad&plen1901[,4] > 30],maxA3)
+
+wilcox.test(maxS[Sd&plen1901[,4] < 31],maxS3)
+wilcox.test(maxA[Ad&plen1901[,4] < 31],maxA3)
+
+
+
+#Score calculation for each base of the sequence used for biochemistry
+##fig 4i ext 5d
+pi84497 <- DNAStringSet(c("TACCTCTTTTCAGCTCGTATCCTACAGTGGAATTTTTCTGCGCAAGCGAC","TACCTCTTTTCAGCTCGTATCCTGCAGTGGACCGCTTGTGCGCAAGCGAC","TACCTCTTTTCAGCTCGTATCCTACAGTGGAATTCTTCTGCGCAAGCGAC","TACCTCTTTTCAGCTCGTATCCTGCAGTGGACCGTTTGTGCGCAAGCGAC","TACCTCTTTTCAGCTCGTATCCTACAGTGGAACGTTTCTGCGCAAGCGAC","TACCTCTTTTCAGCTCGTATCCTGCAGTGGACTTTTTGTGCGCAAGCGAC"))
+names(pi84497) <- c("original","all mut","+1U mut","mut exc for +1U","-1U/0U mut","-10A/-2A/+4C mut")
+pi111750 <- DNAStringSet(c("TACCTCTTTTCAGCTGATGAGCTCACTATATTATTTAACTCCACTATTTG","TACCTCTTTTCAGCTGATGAGCTCGCTATATTCCGCAAGTCCACTATTTG","TACCTCTTTTCAGCTGATGAGCTCACTATATTATTCAACTCCACTATTTG","TACCTCTTTTCAGCTGATGAGCTCGCTATATTCCGTAAGTCCACTATTTG","TACCTCTTTTCAGCTGATGAGCTCACTATATTACGTAACTCCACTATTTG","TACCTCTTTTCAGCTGATGAGCTCGCTATATTCTTTAAGTCCACTATTTG"))
+names(pi111750) <- c("original","all mut","+1U mut","mut exc for +1U","-1U/0U mut","-10A/-2A/+4C mut")
+
+SEQ84497 <- matrix("N",length(pi84497),45)
+for( i in 1:45){
+  SEQ84497[,i] <- substr(pi84497,i,i)
+}
+SEQ111750 <- matrix("N",length(pi111750),45)
+for( i in 1:45){
+  SEQ111750[,i] <- substr(pi111750,i,i)
+}
+
+fit4h2 <- fit4h[,1:17]
+fit4h2[fit4h2< sort(fit4h2,decreasing=T)[15]] <- 0
+
+scr84497 <- matrix(0,length(pi84497),11)
+colnames(scr84497) <- 31:41
+rownames(scr84497) <- names(pi84497)
+
+scr111750 <- matrix(0,length(pi111750),11)
+colnames(scr111750) <- 31:41
+rownames(scr111750) <- names(pi111750)
+
+for(i in 31:41){
+  tmp1 <- SEQ84497[,(i-12):(i+4)]
+  tmp2 <- SEQ111750[,(i-12):(i+4)]
+  for(j in 1:4){
+    scr84497[,i-30] <- scr84497[,i-30]+ rowSums(sweep(tmp1 ==ACGT[j],2,fit4h2[j,],"*"))
+    scr111750[,i-30] <- scr111750[,i-30]+ rowSums(sweep(tmp2 ==ACGT[j],2,fit4h2[j,],"*"))
+  }
+}
+colsG  = brewer.pal(9, "Greys")
+
+image(rbind(c(0,seq(0,4.5,0.5)),scr84497),col=colsG)
+image(rbind(c(0,seq(0,4.5,0.5)),scr111750),col=colsG)
