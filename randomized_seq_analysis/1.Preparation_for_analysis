@@ -14,5 +14,42 @@ for N in  ${NN}; do
 done
 
 
+################
+#Combining multiple files
+################
 cat SD50_randtotal_R1_*.fas > SD50_randtotal.fas
 cat AD50_randtotal_R1_*.fas > AD50_randtotal.fas
+
+
+################
+##Add fixed sequence to create reference fasta file (1)
+################
+#this script is written in R
+##Loading data and fixed sequence
+ref <- read.table("rand_AD50_ref_table.txt")
+cont <- "AAAAGAGGTACAGCT"
+
+#Loading package
+library(Biostrings)
+
+#Export data
+fas <- DNAStringSet(paste0(cont,ref[,1]))
+names(fas) <- paste0("randAD50_",1:nrow(ref))
+writeXStringSet(fas,"randAD50_ref.fas")
+
+
+################
+##Add fixed sequence to create reference fasta file (2)
+################
+#this script is written in R
+##Loading data and fixed sequence
+ref <- read.table("rand_SD50_ref_table.txt")
+cont <- "TACCTCTTTTCAGCT"
+
+#Loading package
+library(Biostrings)
+
+#Export data
+fas <- DNAStringSet(paste0(cont,ref[,1]))
+names(fas) <- paste0("randSD50_",1:nrow(ref))
+writeXStringSet(fas,"randSD50_ref.fas")
