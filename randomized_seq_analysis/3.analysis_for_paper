@@ -36,6 +36,42 @@ for(i in 1:3){
   cat(i)
 }
 
+#Loading endogenous reference
+fas <- readDNAStringSet("piRNA_shojibase.fas")
+fas5350 <- readDNAStringSet("piRNAshojibase_5350.fas")
+bed <- read.table("piRNAlist.bed")
+SEQ <- matrix("N",length(fas),45)
+for( i in 1:45){
+  SEQ[,i] <- substr(fas,i,i)
+}
+rownames(SEQ) <- names(fas)
+
+#Loading endogenous data
+names1901 <- c("P1_Naïve_Total_NaIO4m","P2_Tri1234-4_Total_NaIO4m","O1_Naïve_Total_NaIO4p","O2_Tri1234-4_Total_NaIO4p","Q3_Naive_SiwiIP_NaIO4p","Q4_Tri1234-4_SiwiIP_NaIO4p","R3_Naive_BmAgo3IP_NaIO4p","R4_Tri1234-4_BmAgo3IP_NaIO4p")
+DAT1901 <- list()
+BOXSS1901 <-list()
+BOXRS1901 <-list()
+BOXSE1901 <-list()
+BOXRE1901 <-list()
+for(i in 1:length(names1901)){
+  DAT1901[[i]] <- read.table(paste0("181220_",names1901[i],"_piRNAdist.table"))
+  BOXSS1901[[i]] <- read.table(paste0("181220_",names1901[i],"_BOXSS.table"))
+  BOXRS1901[[i]] <- read.table(paste0("181220_",names1901[i],"_BOXRS.table"))
+  BOXSE1901[[i]] <- read.table(paste0("181220_",names1901[i],"_BOXSE.table"))
+  BOXRE1901[[i]] <- read.table(paste0("181220_",names1901[i],"_BOXRE.table"))
+}
+R4 <- is.element(rownames(DAT1901[[1]]),bed[bed[,1]=="TE1_bm_1645_LINE/R4",4]) #TE1_bm_1645_LINE/R4 contains rRNA
+
+
+#The peak position in each piRNA loci is acquired. If piRNA loci has no read, the peak position will be 45.
+plen1901 <- matrix(0,nrow(DAT1901[[1]]),length(names1901))
+for(i in 1:length(names1901)){
+plen1901[,i] <- apply(DAT1901[[i]],1,order)[26,]+19
+}
+
+#Label whether endogenous piRNA binds more to Siwi or BmAgo3
+Sd <- log2(apply(DAT1901[[5]],1,sum)/sum(DAT1901[[5]])*1000000) > log2(apply(DAT1901[[7]],1,sum)/sum(DAT1901[[7]])*1000000)
+Ad <- log2(apply(DAT1901[[5]],1,sum)/sum(DAT1901[[5]])*1000000) < log2(apply(DAT1901[[7]],1,sum)/sum(DAT1901[[7]])*1000000)
 
 ############################
 #Analysis and plot @R
