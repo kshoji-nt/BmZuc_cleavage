@@ -170,6 +170,12 @@ MAT6a[2,] <- apply(BOXSS1901[[3]][ext& Ad,121:201],2,sum)/sum(ext& Ad)/sum(DAT19
 MAT6a[3,] <- apply(BOXRS1901[[3]][unext& Ad,121:201],2,sum)/sum(unext& Ad)/sum(DAT1901[[3]])*1000000
 MAT6a[4,] <- apply(BOXRS1901[[3]][ext& Ad,121:201],2,sum)/sum(ext& Ad)/sum(DAT1901[[3]])*1000000
 
+#statistical test
+library(exactRankTests)
+wilcox.exact(MAT6[3,22:33],MAT6[4,22:33],paired=T)
+wilcox.exact(MAT6s[3,22:33],MAT6s[4,22:33],paired=T)
+wilcox.exact(MAT6a[3,22:33],MAT6a[4,22:33],paired=T)
+
 
 ###Distribution of the 5 'end of piRNA in the region downstream of a piRNNA
 ##fig.2b
