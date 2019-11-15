@@ -81,7 +81,7 @@ Ad <- log2(apply(DAT1901[[5]],1,sum)/sum(DAT1901[[5]])*1000000) < log2(apply(DAT
 #The peak position in each piRNA loci is acquired. If piRNA loci has no read, the peak position will be 45.
 plenA <- matrix(0,nrow(ADAT[[1]]),3)
 for(i in 1:3){
-  plenA[aref[,2] > 4,i] <-  apply(ADAT1[[i]],1,order)[26,]+19
+  plenA[,i] <-  apply(ADAT1[[i]],1,order)[26,]+19
 }
 
 plenS <- matrix(0,nrow(SDAT[[1]]),3)
