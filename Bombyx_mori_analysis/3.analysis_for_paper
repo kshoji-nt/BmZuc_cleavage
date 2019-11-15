@@ -6,6 +6,9 @@ library(RColorBrewer)
 library(Biostrings)
 library(ggplot2)
 library(gridExtra)
+library(coin)
+library(lsr)
+
 
 #Loading reference
 fas <- readDNAStringSet("piRNA_shojibase.fas")
@@ -171,10 +174,19 @@ MAT6a[3,] <- apply(BOXRS1901[[3]][unext& Ad,121:201],2,sum)/sum(unext& Ad)/sum(D
 MAT6a[4,] <- apply(BOXRS1901[[3]][ext& Ad,121:201],2,sum)/sum(ext& Ad)/sum(DAT1901[[3]])*1000000
 
 #statistical test
-library(exactRankTests)
-wilcox.exact(MAT6[3,22:33],MAT6[4,22:33],paired=T)
-wilcox.exact(MAT6s[3,22:33],MAT6s[4,22:33],paired=T)
-wilcox.exact(MAT6a[3,22:33],MAT6a[4,22:33],paired=T)
+sample1s <- list(MAT6[3,22:33],MAT6s[3,22:33],MAT6a[3,22:33])
+sample2s <- list(MAT6[4,22:33],MAT6s[4,22:33],MAT6a[4,22:33])
+i<-1 #Specify which pair to compare
+sample1 <- sample1s[[i]]
+sample2 <- sample2s[[i]]
+wilcoxModel <- wilcox.test(sample1,sample2,paired=T,conf.int=T,conf.level=0.95)
+wilcoxModel  #to calculate 95 percent confidence interval
+
+mydf <- as.data.frame(cbind(sample1,sample2))
+test <- wilcoxsign_test(sample2 ~ sample1, data = mydf, distribution="exact",conf.int=T)
+test #output of statistical test
+abs(test@statistic@teststatistic/sqrt(length(sample1)+length(sample2))) #calculate effect size
+
 
 
 ###Distribution of the 5 'end of piRNA in the region downstream of a piRNNA
