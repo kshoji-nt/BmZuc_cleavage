@@ -13,7 +13,10 @@ This directory contains the code required for the analysis of mouse endogenous p
 #### randomized_seq_analysis/  
 This directory contains the code required for the analysis of silkworm endogenous piRNAs.  
 
+#### plot_biochemical_data
+This script contains the code required for plot and statistical analysis of biochemical analysis.
+
 ## Requirement:
 Data analysis was performed using cutadapt, Bowtie, bedtools, samtools, and R.   
-R packages used include: ggplot2, RcolorBrewer, Biostrings. 
+R packages used include: ggplot2, RcolorBrewer, Biostrings, coin, lsr, dplyr. 
 
