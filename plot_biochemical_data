@@ -1,0 +1,42 @@
+#plot barplot and calculate statistical value (Fig. 3l)
+#load packages
+library(ggplot2)
+library(dplyr)
+library(lsr)
+
+#Relative values obtained from biochemical analysis
+data <- data.frame(
+cbind(c(rep("allC",4),rep("37U",4),rep("37A",4),rep("37G",4))  ,
+rep(c(171225,180430,180525,180529),4),
+c(c(0.494246672,0.444130887,0.412647126,0.408463957),
+c(1.723106887,1.631467224,1.768012107,1.758337244),
+c(1,1,1,1),
+c(1.13422183,1.266941471,1.266611248,1.355129496))))
+colnames(data) <- c("sample","date","value")
+
+data[,3] <- as.numeric(as.character(data[,3]))
+data[,1] <- factor(data[,1],levels =c("allC","37U","37A","37G"))
+group_time_mean_sd <- data %>% group_by(sample) %>% summarize(mean = mean(value), sd = sd(value)) 
+
+#plot barplot and jitter plot
+g <- ggplot(group_time_mean_sd, aes(x = sample, y = mean))
+g <- g + geom_bar(stat = "identity",size=5,width = 0.7, position = position_dodge(width = 0.5),color=NA,fill ="gray30") 
+errors <- aes(ymax = mean + sd, ymin = mean - sd)
+g <- g + geom_errorbar(errors, width = 0.3,colour="gray60",size=1.1)
+g <- g + geom_jitter(data=data, aes(x = sample, y = value),height=0,width=0.2,size=3)
+g <- g + theme_classic(base_size = 15, base_family = "Helvetica")
+g <- g + coord_fixed(ratio = 3)
+g <- g + scale_y_continuous(limits = c(0, 2))
+g <- g + geom_text(aes(x = sample, y = mean+ sd, label=c("c","a","b","b"),vjust=-1),size = 6,family="Helvetica") 
+g <- g + labs(y="36 nt signal / all signal (37A = 1)",x="")
+g
+
+ggsave(file = "191106_barplot_jitterplot.pdf", plot = g,dpi = 300)
+
+#calculate statistical value
+set <- list(13:16,9:12,1:4)
+i<-2 #Specify which pair to compare (5:8 is control)
+#Since there are 6 pairs that can be compared, the test is corrected by dividing the p-value by 6
+t.test(data[5:8,3],data[set[[i]],3],paired=T) #t.test
+cohensD(data[5:8,3],data[set[[i]],3],method="paired") #Calculate the effect size
+
