@@ -279,4 +279,3 @@ par(new=T)
 barplot(MER85u[lenge,2],ylim=c(-1,1),border="#aabcc1",main=tagname,xlab="1:len")
 
 
-
