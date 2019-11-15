@@ -5,6 +5,8 @@
 #Loading package
 library(RColorBrewer)
 library(Biostrings)
+library(lsr)
+library(coin)
 
 #Loading reference
 aref <- read.table("rand_AD50_ref_table.txt")
@@ -237,14 +239,18 @@ p2<- p2+geom_boxplot(width=0.9,fill="white")+ scale_color_manual(values = c("bla
 grid.arrange(p1,p2,ncol = 2) #Arrange in two rows
 
 #Statistical test with wilcox test
-wilcox.test(maxS[Sd&plen1901[,4] > 30],maxS[Sd&plen1901[,4] <31])
-wilcox.test(maxA[Ad&plen1901[,4] > 30],maxA[Ad&plen1901[,4] <31])
-
-wilcox.test(maxS[Sd&plen1901[,4] > 30],maxS3)
-wilcox.test(maxA[Ad&plen1901[,4] > 30],maxA3)
-
-wilcox.test(maxS[Sd&plen1901[,4] < 31],maxS3)
-wilcox.test(maxA[Ad&plen1901[,4] < 31],maxA3)
+sample1s <- list(maxS[Sd&plen1901[,4] > 30],maxS[Sd&plen1901[,4] < 31],maxA[Ad&plen1901[,4] > 30],maxA[Ad&plen1901[,4] < 31])
+sample2s <- list(maxS3,maxS3,maxA3,maxA3)
+i<-4 #set the compair number
+sample1 <- sample1s[[i]]
+sample2 <- sample2s[[i]]
+length(sample1)+length(sample2) #total sample number
+mydf <- as.data.frame(cbind(c(sample1,sample2),c(rep(1,length(sample1)),rep(2,length(sample2)))))
+mydf[,2] <- as.factor(mydf[,2])
+colnames(mydf) <- c("data","label")
+test <- wilcox_test(data~ label,data=mydf,conf.int=T )
+test #show statistical values
+abs(test@statistic@teststatistic/sqrt(length(sample1)+length(sample2))) #calculate effect size
 
 
 
