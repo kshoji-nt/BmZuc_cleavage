@@ -1,7 +1,8 @@
 ## Overview:  
 This repository contains the code needed to reproduce the result of the following manuscript:  
   
-Zucchini consensus motifs determine the mechanism of pre-piRNA production. Natsuko Izumi*, Keisuke Shoji*, Yutaka Suzuki, Susumu Katsuma, and Yukihide Tomari*. under submission.  
+Natsuko Izumi*, Keisuke Shoji*, Yutaka Suzuki, Susumu Katsuma and Yukihide Tomari. (2020) Zucchini consensus motifs determine the mechanism of pre-piRNA production.  Nature, doi: 10.1038/s41586-020-1966-9
+*These authors are equality contributed to this work.
   
 ## Contents:  
 #### Bombyx_mori_analysis/  
