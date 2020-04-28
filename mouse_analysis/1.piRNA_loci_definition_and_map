@@ -1,5 +1,5 @@
 ###############
-#download data, trim adopters and extract the 23 nt sequence from the 5 'end and calculate the frequency of each sequence.
+#download data, trim adopters and extract the 24 nt sequence from the 5 'end and calculate the frequency of each sequence.
 ###############
 NN="SRR7760309 SRR7760310 SRR7760317 SRR7760318 SRR7760321 SRR7760322 SRR7760343 SRR7760344 SRR7760347 SRR7760348 SRR7760369 SRR7760370 SRR7760373 SRR7760374 SRR7760377 SRR7760378"
 for N in  ${NN}; do
@@ -8,12 +8,12 @@ prefetch -t http ${N}
 fastq-dump ${N}.sra
 cutadapt -a NNNTGGAATTCTCGGGTGCCAAGG --minimum-length 20 --maximum-length 70 -o ${N}_trim.fastq ${N}.fastq
 fastq_to_fasta -i ${N}_trim.fastq -o ${N}_trim.fasta
-cat ${N}_trim.fasta | awk 'NR%2==0' | awk '{print substr($0,1,24);}' | sort | uniq -c |sed -e "s/^ *//g" | sed -e "s/ /\t/g" > ${N}_trim_23bp.txt
+cat ${N}_trim.fasta | awk 'NR%2==0' | awk '{print substr($0,1,24);}' | sort | uniq -c |sed -e "s/^ *//g" | sed -e "s/ /\t/g" > ${N}_trim_24bp.txt
 done
 
 
 ################
-#Put together sequences with high frequency of 23 nt sequences in any library
+#Put together sequences with high frequency of 24 nt sequences in any library
 ################
 #this script is written in R
 name0 <- ""
@@ -28,11 +28,11 @@ library(Biostrings)
 #Loading data
 reads <- list()
 for(i in length(names)){
-	reads[[i]] <- read.table(paste0(name0,names[i],"_trim_23bp.txt"))
+	reads[[i]] <- read.table(paste0(name0,names[i],"_trim_24bp.txt"))
 	cat(i)
 }
 
-#Extract sequences with 23 nt
+#Extract sequences with 24 nt
 dat <- list()
 reads2 <- list()
 for(i in c(1:12)){
@@ -95,7 +95,7 @@ fastaFromBed -name -s -fi GCF_000001635.25_GRCm38.p5_genomic.fna -bed mouse_ZM_p
  
  
 ############
-#For every 23 bases from the 5 'end, no variation is allowed in the subsequent 45 bases
+#For every 24 bases from the 5 'end, no variation is allowed in the subsequent 45 bases
 ############
 #this script is written in R
 in_f1 <- "mouse_ZM_piRNAlist_gnome.fas"
@@ -108,7 +108,7 @@ library(Biostrings)
 reads1 <- readDNAStringSet(in_f1, format="fasta")
 NAMlis <- unlist(strsplit(names(reads1),"\\("))[seq(1, length(reads1)*2, by = 2)]
 
-#Investigate whether 45-base sequences are unique for each 5'-side 23-base sequence
+#Investigate whether 45-base sequences are unique for each 5'-side 24-base sequence
 names <- unique(NAMlis)
 BOX <- rep(F,length(names))
 sec <- floor(length(names)/100*(1:100))
@@ -119,8 +119,8 @@ for(i in 1:length(names)){
 	}
 }
 
-#Number of 23-base sequences with unique 45-base sequences
-##This number is the same as the number of piRNA loci, so if this number is not what you intended, start over by extracting 23nt using sleshhold
+#Number of 24-base sequences with unique 45-base sequences
+##This number is the same as the number of piRNA loci, so if this number is not what you intended, start over by extracting 24 nt using sleshhold
 sum(is.element(NAMlis,names[BOX]))
 
 #Export data
